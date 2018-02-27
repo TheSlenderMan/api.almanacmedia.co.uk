@@ -146,4 +146,91 @@ class venues{
         }
     }
 
+    public function getVenueByUser($uid){
+        try{
+            $getVenues = $this->conn->prepare("SELECT * FROM ds_venues WHERE owner = :UID");
+            $getVenues->bindParam(":UID", $uid);
+            $getVenues->execute();
+
+            $venues = $getVenues->fetch();
+
+            if(empty($venues)){
+                return array("data" => array("found" => 0, "venues" => "No venues found"));
+            } else {
+                return array("data" => array("found" => 1, "venues" => $venues));
+            }
+        } catch (Exception $e) {
+            Throw new Exception($e->getMessage());
+        }
+    }
+
+    public function updateImage($id, $path){
+        try{
+            $update = $this->conn->prepare("UPDATE ds_venues SET vHeader = :path WHERE id = :id");
+            $update->bindParam(":path", $path);
+            $update->bindParam(":id", $id);
+            if($update->execute()){
+                return array("updated" => $path);
+            } else {
+                return array("updated" => 0);
+            }
+        } catch(Exception $e){
+            Throw new Exception($e->getMessage());
+        }
+    }
+
+    public function updateDetails($vdesc, $vweb, $vopen, $vcont, $vaone, $vatwo, $vacity, $vacounty, $vacountry, $vapostcode){
+        if(empty($vdesc)){
+            Throw new Exception("Description is Missing");
+        }
+        if(empty($vweb)){
+            Throw new Exception("Website is Missing");
+        }
+        if(empty($vopen)){
+            Throw new Exception("Open Hours is Missing");
+        }
+        if(empty($vcont)){
+            Throw new Exception("Contact is Missing");
+        }
+        if(empty($vaone)){
+            Throw new Exception("Address One is Missing");
+        }
+        if(empty($vacity)){
+            Throw new Exception("City is Missing");
+        }
+        if(empty($vacountry)){
+            Throw new Exception("Country is Missing");
+        }
+        if(empty($vapostcode)){
+            Throw new Exception("Post Code is Missing");
+        }
+        try{
+            $update = $this->conn->prepare("UPDATE ds_venues SET vDescription = :vdesc, vWebsite = :vweb,
+                                            vOpenHours = :vopen, vContact = :vcont, vAddressOne = :vaone,
+                                            vAddressTwo = :vatwo, vCityTown = :vacity, vCounty = :vacounty,
+                                            vCountry = :vacountry, vPostCode = :vapostcode");
+            $update->bindParam(":vdesc", $vdesc);
+            $update->bindParam(":vweb", $vweb);
+            $update->bindParam(":vopen", $vopen);
+            $update->bindParam(":vcont", $vcont);
+            $update->bindParam(":vaone", $vaone);
+            $update->bindParam(":vatwo", $vatwo);
+            $update->bindParam(":vacity", $vacity);
+            $update->bindParam(":vacounty", $vacounty);
+            $update->bindParam(":vacountry", $vacountry);
+            $update->bindParam(":vapostcode", $vapostcode);
+            if($update->execute()){
+                return array("updated" => 1);
+            } else {
+                return array("updated" => 0, "message" => $update->errorInfo());
+            }
+        } catch (Exception $e){
+            Throw new Exception($e->getMessage());
+        }
+    }
+
+    public function getVenueStats($vid){
+
+    }
+
 }

@@ -1,15 +1,10 @@
 <?php
 include "classes/users/users.php";
 
-if(isset($_POST['email']) && isset($_POST['password'])){
-    if(isset($_POST['type'])){
-        $type = $_POST['type'];
-    } else {
-        $type = "user";
-    }
+if(isset($_POST['password']) && isset($_POST['email'])){
     try{
         $users = new users();
-        echo json_encode($users->loginUser($_POST['email'], $_POST['password'], $type));
+        echo json_encode($users->updatePassword($_POST['password'], $_POST['email']));
         exit;
     } catch (Exception $e) {
         echo json_encode(array("message" => $e->getMessage(), "code" => 1));

@@ -40,7 +40,7 @@ class users{
         $hash = $this->createHash($password, $salt);
 
         try{
-            $insertUser = $this->conn->prepare("INSERT INTO ds_users (fullName, email, passwordHash, saltHash) VALUES (:fname, :email, :passwordHash, :saltHash)");
+            $insertUser = $this->conn->prepare("INSERT INTO ds_users (fullName, email, passwordHash, saltHash, userType) VALUES (:fname, :email, :passwordHash, :saltHash, 'user')");
             $insertUser->bindParam(':fname', $name);
             $insertUser->bindParam(':email', $email);
             $insertUser->bindParam(':passwordHash', $hash);
@@ -61,9 +61,9 @@ class users{
 
     }
 
-    public function loginUser($email, $pass){
+    public function loginUser($email, $pass, $type){
         try{
-            $user = $this->getUserByEmail($email);
+            $user = $this->getUserByEmail($email, $type);
 
             if($user['data']['found'] == 1){
                 $salt = $user['data']['user']['saltHash'];
@@ -84,10 +84,11 @@ class users{
         }
     }
 
-    public function getUserByEmail($email) {
+    public function getUserByEmail($email, $type) {
         try{
-            $getUser = $this->conn->prepare("SELECT * FROM ds_users WHERE email = :email");
+            $getUser = $this->conn->prepare("SELECT * FROM ds_users WHERE email = :email AND userType = :userType");
             $getUser->bindParam(":email", strtolower($email));
+            $getUser->bindParam(":userType", strtolower($type));
             $getUser->execute();
 
             $user = $getUser->fetchAll();
@@ -98,6 +99,84 @@ class users{
                 return array("data" => array("found" => 1, "user" => $user[0]));
             }
         } catch (Exception $e) {
+            Throw new Exception($e->getMessage());
+        }
+    }
+
+    public function resetPassword($email){
+        if(empty($email)){
+            Throw new Exception("No email address supplied.");
+        }
+
+        if($this->checkUserExists($email)){
+
+            $date = date("Y-m-d");
+            $code = sha1($date . $email);
+
+            $addCode = $this->conn->prepare("INSERT INTO ds_reset (code, email) VALUES (:code, :email)");
+            $addCode->bindParam(":code", $code);
+            $addCode->bindParam(":email", $email);
+            if($addCode->execute()){
+                $this->email = new email($email);
+                $this->email->setBody($this->content->getContent("RESET", array("email" => $email, "code" => $code)));
+                $this->email->setSubject("Reset your DealChasr password");
+                $this->email->executeMail();
+
+                return array("reset" => 1);
+            } else {
+                return array("message" => "SORRY, SOMETHING WENT WRONG. PLEASE TRY AGAIN.");
+            }
+        } else {
+            return array("message" => "SORRY, WE CAN'T FIND THAT EMAIL ADDRESS.");
+        }
+    }
+
+    public function validateCode($code, $email){
+        try{
+            $validate = $this->conn->prepare("SELECT * FROM ds_reset WHERE code = :code AND email = :email AND used = 0");
+            $validate->bindParam(":code", $code);
+            $validate->bindParam(":email", $email);
+            $validate->execute();
+
+            $result = $validate->fetch();
+            if(empty($result)){
+                return 0;
+            } else {
+                $inValLink = $this->conn->prepare("UPDATE ds_reset SET used = 1 WHERE code = :code AND email = :email");
+                $inValLink->bindParam(":code", $code);
+                $inValLink->bindParam(":email", $email);
+                $inValLink->execute();
+                return 1;
+            }
+        } catch (Exception $e){
+            return 0;
+;        }
+    }
+
+    public function updatePassword($pass, $email){
+        if(empty($pass)){
+            Throw new Exception("Password was not supplied.");
+        }
+        try{
+            $salt = $this->createSalt();
+            $hash = $this->createHash($pass, $salt);
+
+            $updatePassword = $this->conn->prepare("UPDATE ds_users SET passwordHash = :passwordHash, saltHash = :saltHash
+                                                    WHERE email = :email");
+            $updatePassword->bindParam(':passwordHash', $hash);
+            $updatePassword->bindParam(':saltHash', $salt);
+            $updatePassword->bindParam(':email', $email);
+
+            if($updatePassword->execute()){
+                $this->email = new email($email);
+                $this->email->setBody($this->content->getContent("PASSWORDCHANGED"));
+                $this->email->setSubject("Your DealChasr Password has Changed!");
+                $this->email->executeMail();
+                return array("updated" => 1);
+            } else {
+                Throw new Exception(json_encode($updatePassword->errorInfo()));
+            }
+        } catch (Exception $e){
             Throw new Exception($e->getMessage());
         }
     }

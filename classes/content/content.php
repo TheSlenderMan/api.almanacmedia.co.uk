@@ -37,6 +37,33 @@ class content{
                                     <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
                                     </div>';
                 break;
+            case "RESET":
+                $this->content = '<div style="width:100%;text-align:center;">
+                                    <img src="http://img.almanacmedia.co.uk/dealchasrlogo.png" width="200" height="200" /><br /><br/>
+                                    <span style="color:#F9A603;font-size:18px;font-weight:bold;" >HERE IS YOUR PASSWORD RESET LINK!</span><br/><br/>
+                                    Please click on the link below to reset your password. Please note once used this link will expire.
+                                    <br/><Br/>
+                                    <a href="http://password.dealchasr.co.uk/reset/newpassword.php?code=' . $params['code'] . '&email=' . $params['email'] . '" >
+                                        http://password.dealchasr.co.uk/reset/newpassword.php?code=' . $params['code'] . '&email=' . $params['email'] . '
+                                    </a>
+                                    <br/><br/>
+                                    Thanks!<br/><br/><br/>
+                                    <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
+                                    </div>';
+                break;
+            case "PASSWORDCHANGED":
+                $this->content = '<div style="width:100%;text-align:center;">
+                                    <img src="http://img.almanacmedia.co.uk/dealchasrlogo.png" width="200" height="200" /><br /><br/>
+                                    <span style="color:#F9A603;font-size:18px;font-weight:bold;" >YOUR PASSWORD HAS CHANGED</span><br/><br/>
+                                    We are just letting you know your password has been changed.
+                                    <br/><Br/>
+                                    If you think this has been changed in error then please contact us on theteam@dealchasr.co.uk.
+                                    </a>
+                                    <br/><br/>
+                                    Happy Chasing!<br/><br/><br/>
+                                    <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
+                                    </div>';
+                break;
             default:
                 $this->content = "";
                 break;
