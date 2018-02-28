@@ -230,6 +230,63 @@ class venues{
     }
 
     public function getVenueStats($vid){
+        if(empty($vid)){
+            Throw new Exception("No venue ID was supplied.");
+        }
+
+        try{
+            $stats = array("chartData" => array(), "voucherCount" => 0, "dealCount" => 0, "vouchers" => array(), "deals" => array());
+
+            // First day of the month.
+            $start = date('Y-m-01 00:00:00');
+            // Last day of the month.
+            $end = date('Y-m-t 23:59:59');
+
+            $vouchers = $this->conn->prepare("SELECT * FROM ds_vouchers WHERE venueID = :vid");
+            $vouchers->bindParam(":vid", $vid);
+            $vouchers->execute();
+
+            $getVouchers = $vouchers->fetchAll();
+            foreach($getVouchers AS $k => $v){
+                $redeemed = $this->conn->prepare("SELECT id, redeemed FROM ds_redemptions WHERE voucherID = :voucher
+                                                  AND redeemed > :start AND redeemed < :endd");
+                $redeemed->bindParam(":voucher", $v['id']);
+                $redeemed->bindParam(":start", $start);
+                $redeemed->bindParam(":endd", $end);
+                $redeemed->execute();
+                $rs = $redeemed->fetchAll();
+
+                foreach($rs AS $rk => $rv){
+                    $thisDate = date("Y-m-d", strtotime($rv['redeemed']));
+                    if(isset($stats['chartData'][$thisDate])){
+                        $stats['chartData'][$thisDate] = $stats['chartData'][$thisDate] + 1;
+                    } else {
+                        $stats['chartData'][$thisDate] = 1;
+                    }
+                    $stats['vouchers'][] = $rv;
+                }
+
+                $stats['voucherCount'] = ($stats['voucherCount'] + count($rs));
+            }
+
+            $deals = $this->conn->prepare("SELECT * FROM ds_deals WHERE venueID = :vid");
+            $deals->bindParam(":vid", $vid);
+            $deals->execute();
+
+            $getDeals = $deals->fetchAll();
+            foreach($getDeals AS $kk => $vv){
+                $interested = $this->conn->prepare("SELECT id FROM ds_imgoing WHERE dealID = :deal");
+                $interested->bindParam(":deal", $vv['id']);
+                $interested->execute();
+                $in = $interested->fetchAll();
+                $stats['dealCount'] = ($stats['dealCount'] + count($in));
+                $stats['deals'][] = $vv;
+            }
+
+            return $stats;
+        } catch (Exception $e) {
+            Throw new Exception($e->getMessage());
+        }
 
     }
 
