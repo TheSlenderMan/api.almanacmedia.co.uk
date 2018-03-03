@@ -86,7 +86,7 @@ class users{
 
     public function getUserByEmail($email, $type) {
         try{
-            $getUser = $this->conn->prepare("SELECT * FROM ds_users WHERE email = :email AND userType = :userType");
+            $getUser = $this->conn->prepare("SELECT * FROM ds_users WHERE email = :email AND (userType = :userType || userType = 'admin')");
             $getUser->bindParam(":email", strtolower($email));
             $getUser->bindParam(":userType", strtolower($type));
             $getUser->execute();
