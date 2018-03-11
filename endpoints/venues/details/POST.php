@@ -27,10 +27,10 @@ $venue = new venues();
         }
     } else if(isset($_POST['vDescription']) && isset($_POST['vWebsite']) && isset($_POST['vOpenHours']) && isset($_POST['vContact'])
     && isset($_POST['vAddressOne']) && isset($_POST['vAddressTwo']) && isset($_POST['vAddressCity']) && isset($_POST['vAddressCounty'])
-        && isset($_POST['vAddressCountry']) && isset($_POST['vAddressPostCode'])){
+        && isset($_POST['vAddressCountry']) && isset($_POST['vAddressPostCode']) && isset($_POST['vEmail'])){
         echo json_encode($venue->updateDetails($_POST['vDescription'],$_POST['vWebsite'],$_POST['vOpenHours'],$_POST['vContact']
             ,$_POST['vAddressOne'],$_POST['vAddressTwo'],$_POST['vAddressCity'],$_POST['vAddressCounty']
-            ,$_POST['vAddressCountry'],$_POST['vAddressPostCode']));
+            ,$_POST['vAddressCountry'],$_POST['vAddressPostCode'], $_POST['vEmail']));
         exit;
     } else {
         echo json_encode(array("updated" => 0, "message" => "Missing Required Data"));

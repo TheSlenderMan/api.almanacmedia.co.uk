@@ -2,6 +2,7 @@
 
     //API USAGE
     CONST DS_API_TOKEN = "DS1k1Il68_uPPoD";
+	CONST DS_API_CLIENTS = "ADMIN,PARTNER,APP";
 
     //DATABASE USAGE
     CONST DS_DATABASE_NAME     = "db720874052";
@@ -16,5 +17,6 @@
         EMPTY     - 2
         GONE      - 4
         FORBIDDEN - 5
+		TOKEN EXPIRED - 6
     */
 ?>

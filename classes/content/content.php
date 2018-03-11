@@ -37,6 +37,20 @@ class content{
                                     <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
                                     </div>';
                 break;
+			case "VOUCHERREDEEMEDVENUE":
+                $this->content = '<div style="width:100%;text-align:center;">
+                                    <img src="http://img.almanacmedia.co.uk/dealchasrlogo.png" width="200" height="200" /><br /><br/>
+                                    <span style="color:#F9A603;font-size:18px;font-weight:bold;" >HI ' . $params[3] . '!</span><br/><br/>
+                                    One of your vouchers has been redeemed! The voucher is on its way to your venue!
+                                    <br/><Br/>
+                                    <span style="color:#F9A603;font-size:18px;font-weight:bold;" >' . $params[2] . ' ' . $params[1] . '</span><br/><br/>
+									<span style="color:#F9A603;font-size:14px;font-weight:bold;" >' . $params[0] . '</span><br/><br/>
+									Remember, when you are presented with your voucher, to hit validate on their phone.
+                                    <br/><br/>
+                                    Thanks!<br/><br/><br/>
+                                    <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
+                                    </div>';
+                break;
             case "RESET":
                 $this->content = '<div style="width:100%;text-align:center;">
                                     <img src="http://img.almanacmedia.co.uk/dealchasrlogo.png" width="200" height="200" /><br /><br/>
@@ -63,6 +77,35 @@ class content{
                                     Happy Chasing!<br/><br/><br/>
                                     <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
                                     </div>';
+                break;
+			case "INVOICE":
+				$this->content = '<div style="width:100%;text-align:center;">
+                                    <img src="http://img.almanacmedia.co.uk/dealchasrlogo.png" width="200" height="200" /><br /><br/>
+                                    <span style="color:#F9A603;font-size:18px;font-weight:bold;" >YOUR DEAL CHASR INVOICE: ' . $params[3] . '</span><br/><br/>
+                                    Your DealChasr invoice is now ready.
+                                    <br/><Br/>
+                                    <span style="color:#F9A603;font-size:18px;font-weight:bold;" >' . $params[1] . ' REDEMPTIONS THIS MONTH</span><br /><br />
+									<span style="color:#F9A603;font-size:18px;font-weight:bold;" >&pound;' . sprintf('%0.2f', $params[0]) . ' TOTAL</span><br /><br />
+                                    <br/><br/>
+									We will send you a PayPal link shortly. Invoices are payable within 3 days of this email.
+									<br /><br />
+									<a href="http://my.dealchasr.co.uk/app/" style="color:#F9A603;font-size:14px;font-weight:bold;" >VIEW YOUR INVOICE HERE</a><br /><br />
+                                    Thanks!<br/><br/><br/>
+                                    <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
+                                    </div>
+									
+									<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+									<input type="hidden" name="cmd" value="_xclick">
+									<input type="hidden" name="business" value="theteam@dealchasr.co.uk">
+									<input type="hidden" name="item_name" value="DealChasr Invoice">
+									<input type="hidden" name="item_number" value="1">
+									<input type="hidden" name="amount" value="' . $params[0] . '">
+									<input type="hidden" name="currency_code" value="GBP">
+									<input type="hidden" name="return" value="http://my.dealchasr.co.uk/thankyou/?">
+									<input type="image" name="submit" border="0"
+									src="https://www.paypalobjects.com/en_GB/i/btn/btn_paynowCC_LG.gif"
+									alt="PayPal - The safer, easier way to pay online">
+									</form>';
                 break;
             default:
                 $this->content = "";

@@ -12,15 +12,24 @@ class venues{
 
     public function getVenues(){
         try{
-            $getVenues = $this->conn->prepare("SELECT * FROM ds_venues");
+            $getVenues = $this->conn->prepare("SELECT * FROM ds_venues WHERE active = 1");
             $getVenues->execute();
 
             $venues = $getVenues->fetchAll();
 
             foreach($venues as $k => $v){
-                $venues[$k]['vouchers'] = $this->getVouchers($v['id']);
-                $venues[$k]['deals'] = $this->getDeals($v['id']);
+				$vouchCount = $this->getVouchers($v['id']);
+				$dealCount = $this->getDeals($v['id']);
+				if(count($vouchCount) == 0 && count($dealCount) == 0 && $v['tier'] == 1){
+					unset($venues[$k]);
+					continue;
+				} else if($v['tier'] == 2){
+					$venues[$k]['vouchers'] = $vouchCount;
+					$venues[$k]['deals'] = $dealCount;
+				}
             }
+			
+			$venues = array_values($venues);
 
             if(empty($venues)){
                 return array("data" => array("found" => 0, "venues" => "No venues found"));
@@ -39,7 +48,7 @@ class venues{
             $getVenues->execute();
 
             $venues = $getVenues->fetch();
-
+			
             $venues['vouchers'] = $this->getVouchers($VID, $userID);
             $venues['deals'] = $this->getDeals($VID, $userID);
 
@@ -52,6 +61,37 @@ class venues{
             Throw new Exception($e->getMessage());
         }
     }
+	
+	public function usedThisMonth($vid){
+		try{
+			$getVs = $this->conn->prepare('SELECT id, voucherCount FROM ds_vouchers WHERE venueID = :vid
+											AND created >= DATE(LAST_DAY(CURDATE()) + INTERVAL 1 DAY - INTERVAL 1 MONTH)
+											AND created < DATE(LAST_DAY(CURDATE()) + INTERVAL 1 DAY)');
+			$getVs->bindParam(":vid", $vid);
+			$getVs->execute();
+			
+			$vRes = $getVs->fetchAll();
+			
+			$getDs = $this->conn->prepare('SELECT id FROM ds_deals WHERE venueID = :vid
+											AND created >= DATE(LAST_DAY(CURDATE()) + INTERVAL 1 DAY - INTERVAL 1 MONTH)
+											AND created < DATE(LAST_DAY(CURDATE()) + INTERVAL 1 DAY)');
+			$getDs->bindParam(":vid", $vid);
+			$getDs->execute();
+			
+			$dRes = $getDs->fetchAll();
+			
+			$vResCount = 0;
+			foreach($vRes As $k => $v){
+				$vResCount = ($vResCount + $v['voucherCount']);
+			}
+			
+			$total = ($vResCount + count($dRes));
+			
+			return $total;
+		} catch (Exception $e) {
+			Throw new Exception($e->getMessage());
+		}
+	}
 
     public function getVouchers($id, $userID){
         try{
@@ -153,6 +193,20 @@ class venues{
             $getVenues->execute();
 
             $venues = $getVenues->fetch();
+			
+			$used = $this->usedThisMonth($venues['id']);
+			$totalUsed = $used;
+			$tier = $venues['tier'];
+			
+			if($tier == 1){
+				$tierOneLimit = 50;
+				$totalRemaining = ($tierOneLimit - $totalUsed);
+				$venues['totalUsed'] = $totalUsed;
+				$venues['totalRemaining'] = $totalRemaining;
+			} else {
+				$venues['totalUsed'] = $totalUsed;
+				$venues['totalRemaining'] = 'unlimited';
+			}
 
             if(empty($venues)){
                 return array("data" => array("found" => 0, "venues" => "No venues found"));
@@ -179,7 +233,7 @@ class venues{
         }
     }
 
-    public function updateDetails($vdesc, $vweb, $vopen, $vcont, $vaone, $vatwo, $vacity, $vacounty, $vacountry, $vapostcode){
+    public function updateDetails($vdesc, $vweb, $vopen, $vcont, $vaone, $vatwo, $vacity, $vacounty, $vacountry, $vapostcode, $vemail){
         if(empty($vdesc)){
             Throw new Exception("Description is Missing");
         }
@@ -191,6 +245,9 @@ class venues{
         }
         if(empty($vcont)){
             Throw new Exception("Contact is Missing");
+        }
+		if(empty($vemail)){
+            Throw new Exception("Email is Missing");
         }
         if(empty($vaone)){
             Throw new Exception("Address One is Missing");
@@ -206,13 +263,14 @@ class venues{
         }
         try{
             $update = $this->conn->prepare("UPDATE ds_venues SET vDescription = :vdesc, vWebsite = :vweb,
-                                            vOpenHours = :vopen, vContact = :vcont, vAddressOne = :vaone,
+                                            vOpenHours = :vopen, vContact = :vcont, vEmail = :email, vAddressOne = :vaone,
                                             vAddressTwo = :vatwo, vCityTown = :vacity, vCounty = :vacounty,
                                             vCountry = :vacountry, vPostCode = :vapostcode");
             $update->bindParam(":vdesc", $vdesc);
             $update->bindParam(":vweb", $vweb);
             $update->bindParam(":vopen", $vopen);
             $update->bindParam(":vcont", $vcont);
+			$update->bindParam(":email", $vemail);
             $update->bindParam(":vaone", $vaone);
             $update->bindParam(":vatwo", $vatwo);
             $update->bindParam(":vacity", $vacity);
@@ -282,6 +340,8 @@ class venues{
                 $stats['dealCount'] = ($stats['dealCount'] + count($in));
                 $stats['deals'][] = $vv;
             }
+			
+			$stats['invoices'] = $this->getInvoices($vid);
 
             return $stats;
         } catch (Exception $e) {
@@ -289,5 +349,89 @@ class venues{
         }
 
     }
+	
+	public function getInvoices($vid){
+		if(empty($vid)){
+			Throw new Exception("No Venue ID Was Supplied.");
+		}
+		try{
+			$invoices = $this->conn->prepare("SELECT * FROM ds_invoices WHERE venueID = :vid ORDER BY invoiceDate DESC LIMIT 5");
+			$invoices->bindParam(":vid", $vid);
+			$invoices->execute();
+			$data = $invoices->fetchAll();
+			return $data;
+		} catch (Exception $e) {
+			Throw new Exception($e->getMessage());
+		}
+	}
+	
+	public function searchVenues($str){
+		try{
+			$search = $this->conn->prepare("SELECT * FROM ds_venues WHERE id LIKE :str || vEmail LIKE :str2");
+			$search->bindValue(":str", "%" . $str . "%");
+			$search->bindValue(":str2", "%" . $str . "%");
+			$search->execute();
+			$results = $search->fetchAll();
+			
+			if(count($results) > 0){
+				$data = $results[0];
+			
+				$vInfo = $this->conn->prepare("SELECT vt.voucherName, dt.dealName, v.id, (SELECT COUNT(id) FROM ds_redemptions WHERE voucherID = v.id) AS redemptionCount
+												FROM ds_vouchers AS v
+												JOIN ds_redemptions AS r
+												ON v.id = r.voucherID
+												JOIN ds_voucher_type AS vt
+												ON vt.id = v.voucherTypeID
+												JOIN ds_deal_types AS dt
+												ON dt.id = v.dealType
+												WHERE v.active = 1
+												AND v.endDate > NOW()
+												AND v.venueID = :vid
+												GROUP BY v.id");
+				$vInfo->bindParam(":vid", $data['id']);
+				$vInfo->execute();
+				$data['vouchers'] = $vInfo->fetchAll();
+				
+				if($data['tier'] == 1){
+					$data['tier_string'] = "FREE TIER";
+				} else if($data['tier'] == 2) {
+					$data['tier_string'] = "PRO TIER";
+				} else if($data['tier'] == 3) {
+					$data['tier_string'] = "PREMIUM TIER";
+				} else {
+					$data['tier_string'] = "UNKNOWN TIER (CONTACT SUPPORT)";
+				}
+				
+				return array("data" => array("results" => $data));
+			} else {
+				return array("data" => array("results" => array()));
+			}
+			
+		} catch (Exception $e) {
+			Throw new Exception($e->getMessage());
+		}
+	}
 
+	public function changeAccountStatus($state, $id){
+		if(empty($state)){
+			Throw new Exception("Account State not Supplied.");
+		}
+		if(empty($id)){
+			Throw new Exception("Venue ID not supplied.");
+		}
+		try{
+			if($state == "DEACTIVATE"){
+				$s = 0;
+			} else {
+				$s = 1;
+			}
+			$update = $this->conn->prepare("UPDATE ds_venues SET active = :active WHERE id = :vid");
+			$update->bindParam(":active", $s);
+			$update->bindParam(":vid", $id);
+			$update->execute();
+			return array("changed" => 1, "message" => "Account Updated");
+		} catch (Exception $e) {
+			Throw new Exception($e->getMessage());
+		}
+	}
 }

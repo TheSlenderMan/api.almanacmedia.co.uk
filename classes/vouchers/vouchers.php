@@ -1,22 +1,48 @@
 <?php
-include "classes/database/data.php";
 include "classes/email/email.php";
 include "classes/content/content.php";
+include "classes/venues/venues.php";
 
 class vouchers{
 
     private $conn;
     private $email;
     private $content;
+	private $venues;
 
     function __construct(){
         $connection = new data();
         $this->conn = $connection->startConnection();
         $this->content = new content();
+		$this->venues = new venues();
     }
 
     public function createVoucher($uid, $vid, $did, $void, $vcount, $vdesc, $time){
         try{
+			$getVenue = $this->venues->getVenue($vid);
+			$tier = $getVenue['data']['venues']['tier'];
+			$active = $getVenue['data']['venues']['active'];
+			
+			if($tier == 1){
+				$limit = 50;
+				$getCount = $this->venues->usedThisMonth($vid);
+				$totalRemaining = ($limit - $getCount);
+				if($totalRemaining == 0){
+					return array("data" => array("created" => 0, "message" => "SORRY, YOU HAVE REACHED YOUR VOUCHER LIMIT THIS MONTH.<br /><br />"));
+				} else {
+					$totalAfterCount = ($totalRemaining - $vcount);
+					if($totalAfterCount < 0){
+						return array("data" => array("created" => 0, "message" => "SORRY, YOU DO NOT HAVE ENOUGH VOUCHERS LEFT.<br /><br />"));
+					}
+				}
+			}
+			
+			if($active == 0){
+				return array("data" => array("created" => 0, "message" => "SORRY, YOUR ACCOUNT IS NOT ACTIVE AT THE MOMENT.<br /><br />
+											Please make sure your payments are up to date. If you believe this to be an error please contact 
+											theteam@dealchasr.co.uk"));
+			}
+			
             $date = date("Y-m-d");
             $newDate = $date . ' ' . $time;
 
@@ -54,6 +80,20 @@ class vouchers{
             $getUser->bindParam(":uid", $userID);
             $getUser->execute();
             $userDetails = $getUser->fetch();
+			
+			$getVEmail = $this->conn->prepare("SELECT v.vEmail, vt.voucherName, dt.dealName, v.vDescription, u.fullName FROM ds_vouchers AS vo
+											JOIN ds_venues AS v
+											ON v.id = vo.venueID
+											JOIN ds_voucher_type AS vt
+											ON vt.id = vo.voucherTypeID
+											JOIN ds_deal_types AS dt
+											ON dt.id = vo.dealType
+											JOIN ds_users AS u
+											ON u.id = v.owner
+											WHERE vo.id = :vid");
+            $getVEmail->bindParam(":vid", $voucherID);
+            $getVEmail->execute();
+            $vEmail = $getVEmail->fetch();
 
             $uName = $userDetails['fullName'];
             $uEmail = $userDetails['email'];
@@ -70,6 +110,12 @@ class vouchers{
                 $this->email = new email($uEmail);
                 $this->email->setSubject("New voucher redeemed!");
                 $this->email->setBody($this->content->getContent("VOUCHERREDEEMED", array($uName)));
+                $this->email->executeMail();
+				
+				$this->email = new email($vEmail['vEmail']);
+                $this->email->setSubject("One of your " . $vEmail['voucherName'] . " " . $vEmail['dealName'] . " vouchers has been redeemed!");
+                $this->email->setBody($this->content->getContent("VOUCHERREDEEMEDVENUE", array($vEmail['vDescription'],
+				$vEmail['dealName'], $vEmail['voucherName'], $vEmail['fullName'])));
                 $this->email->executeMail();
 
                 return array("data" => array("created" => 1, "redeemed" => $this->conn->lastInsertId()));

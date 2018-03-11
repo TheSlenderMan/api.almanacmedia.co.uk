@@ -1,13 +1,15 @@
 <?php
-include "classes/database/data.php";
+include "classes/venues/venues.php";
 
 class deals{
 
     private $conn;
+	private $venues;
 
     function __construct(){
         $connection = new data();
         $this->conn = $connection->startConnection();
+		$this->venues = new venues();
     }
 
     public function markInterested($userID, $voucherID){
@@ -36,6 +38,20 @@ class deals{
     public function createDeal($uid, $vid, $did, $dtitle, $ddesc, $ddate, $dtime, $rec, $daily){
         try{
 
+			$getVenue = $this->venues->getVenue($vid);
+			$tier = $getVenue['data']['venues']['tier'];
+			$active = $getVenue['data']['venues']['active'];
+			
+			if($tier == 1){
+				return array("data" => array("created" => 0, "message" => "SORRY, DEALS ARE UNAVAILABLE ON THE FREE ACCOUNT.<br /><br />"));
+			}
+			
+			if($active == 0){
+				return array("data" => array("created" => 0, "message" => "SORRY, YOUR ACCOUNT IS NOT ACTIVE AT THE MOMENT.<br /><br />
+											Please make sure your payments are up to date. If you believe this to be an error please contact 
+											theteam@dealchasr.co.uk"));
+			}
+		
             $newDate = $ddate . ' ' . $dtime;
 
             $deal = $this->conn->prepare("INSERT INTO ds_deals (dealTypeID, venueID, dealTitle,
