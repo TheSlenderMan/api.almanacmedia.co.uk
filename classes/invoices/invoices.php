@@ -26,6 +26,18 @@ class invoices{
 			$getInvoice->bindParam(":iid", $iid);
 			$getInvoice->execute();
 			$invoice = $getInvoice->fetch();
+			
+			$getPayments = $this->conn->prepare("SELECT * FROM ds_payments WHERE invoiceID = :iid");
+			$getPayments->bindParam(":iid", $iid);
+			$getPayments->execute();
+			$payments = $getPayments->fetchAll();
+			
+			foreach($payments AS $p => $pv){
+				$payments[$p]['grossPaid'] = sprintf('%0.2f', $payments[$p]['grossPaid']);
+			}
+			
+			$invoice['payments'] = $payments;
+			
 			$invoice['amount'] = sprintf('%0.2f', $invoice['amount']);
 			return array("data" => array("invoice" => $invoice));
 		} catch (Exception $e){
@@ -35,7 +47,7 @@ class invoices{
 	
 	public function getDueInvoices(){
 		try{
-			$getInvoices = $this->conn->prepare("SELECT i.id, i.amount, i.note, v.vName, v.vEmail 
+			$getInvoices = $this->conn->prepare("SELECT i.id, i.amount, i.note, v.vName, v.vEmail
 												FROM ds_invoices AS i 
 												JOIN ds_venues AS v
 												ON v.id = i.venueID
@@ -44,6 +56,16 @@ class invoices{
 												AND cancelled = 0");
 			$getInvoices->execute();
 			$invoices = $getInvoices->fetchAll();
+			
+			foreach($invoices AS $k => $v){
+				$getPayments = $this->conn->prepare("SELECT * FROM ds_payments WHERE invoiceID = :iid");
+				$getPayments->bindParam(":iid", $v['id']);
+				$getPayments->execute();
+				$payments = $getPayments->fetchAll();
+				
+				$invoices[$k]['payments'] = $payments;
+			}
+			
 			return array("data" => array("invoices" => $invoices));
 		} catch(Exception $e) {
 			Throw new Exception($e->getMessage());
