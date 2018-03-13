@@ -87,10 +87,25 @@ class content{
                                     <span style="color:#F9A603;font-size:18px;font-weight:bold;" >' . $params[1] . ' REDEMPTIONS THIS MONTH</span><br /><br />
 									<span style="color:#F9A603;font-size:18px;font-weight:bold;" >&pound;' . sprintf('%0.2f', $params[0]) . ' TOTAL</span><br /><br />
                                     <br/><br/>
-									We will send you a PayPal link shortly. Invoices are payable within 3 days of this email.
+									Invoices are payable within 3 days of this email.
 									<br /><br />
 									<a href="http://my.dealchasr.co.uk/app/" style="color:#F9A603;font-size:14px;font-weight:bold;" >VIEW YOUR INVOICE HERE</a><br /><br />
                                     Thanks!<br/><br/><br/>
+                                    <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
+                                    </div>';
+                break;
+			case "OVERDUEINVOICE":
+				$this->content = '<div style="width:100%;text-align:center;">
+                                    <img src="http://img.almanacmedia.co.uk/dealchasrlogo.png" width="200" height="200" /><br /><br/>
+                                    <span style="color:#F9A603;font-size:18px;font-weight:bold;" >YOUR DEAL CHASR INVOICE IS OVER DUE!</span><br/><br/>
+                                    <br/><Br/>
+									<span style="color:#F9A603;font-size:18px;font-weight:bold;" >&pound;' . sprintf('%0.2f', $params[0]) . ' TOTAL</span><br /><br />
+                                    <br/><br/>
+									If you do not make a full payment on your invoice your account may be suspended.<br /><br />
+									Click below to pay now!
+									<br /><br />
+									<a href="http://my.dealchasr.co.uk/app/" style="color:#F9A603;font-size:14px;font-weight:bold;" >VIEW YOUR INVOICE HERE</a><br /><br />
+                                    Thanks,<br/><br/><br/>
                                     <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
                                     </div>';
                 break;

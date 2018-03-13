@@ -47,7 +47,7 @@ class invoices{
 	
 	public function getDueInvoices(){
 		try{
-			$getInvoices = $this->conn->prepare("SELECT i.id, i.amount, i.note, v.vName, v.vEmail
+			$getInvoices = $this->conn->prepare("SELECT i.id, i.amount, i.subscription, i.note, v.vName, v.vEmail
 												FROM ds_invoices AS i 
 												JOIN ds_venues AS v
 												ON v.id = i.venueID
@@ -63,6 +63,8 @@ class invoices{
 				$getPayments->execute();
 				$payments = $getPayments->fetchAll();
 				
+				$total = ($invoices[$k]['amount'] + $invoices[$k]['subscription']);
+				$invoices[$k]['amount'] = sprintf('%0.2f', $total);
 				$invoices[$k]['payments'] = $payments;
 			}
 			
