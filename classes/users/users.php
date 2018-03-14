@@ -15,7 +15,7 @@ class users{
         $this->content = new content();
     }
 
-    public function createUser($name, $email, $password){
+    public function createUser($name, $email, $password, $type){
         if(empty($name)){
             Throw new Exception("Full Name not supplied.");
         }
@@ -24,6 +24,9 @@ class users{
         }
         if(empty($password)){
             Throw new Exception("Password not supplied.");
+        }
+		if(empty($type)){
+            $type = user;
         }
         if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
             return array("data" => array("message" => "PLEASE ENTER A CORRECT EMAIL ADDRESS", "created" => 0));
@@ -40,11 +43,12 @@ class users{
         $hash = $this->createHash($password, $salt);
 
         try{
-            $insertUser = $this->conn->prepare("INSERT INTO ds_users (fullName, email, passwordHash, saltHash, userType) VALUES (:fname, :email, :passwordHash, :saltHash, 'user')");
+            $insertUser = $this->conn->prepare("INSERT INTO ds_users (fullName, email, passwordHash, saltHash, userType) VALUES (:fname, :email, :passwordHash, :saltHash, :type)");
             $insertUser->bindParam(':fname', $name);
             $insertUser->bindParam(':email', $email);
             $insertUser->bindParam(':passwordHash', $hash);
             $insertUser->bindParam(':saltHash', $salt);
+			$insertUser->bindParam(':type', $type);
 
             if($insertUser->execute()){
                 $this->email = new email($email);

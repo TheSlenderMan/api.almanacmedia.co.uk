@@ -16,7 +16,7 @@ class invoices{
 		}
 		try{
 			$getInvoice = $this->conn->prepare("SELECT i.id, i.invoicePaid, i.invoiceSent, i.venueID, i.amount,
-												i.redemptions, i.invoiceDate, i.cancelled, i.cancelDate, i.note,
+												i.redemptions, i.invoiceDate, i.cancelled, i.cancelDate, i.note, i.promo,
 												v.vName, v.vEmail, v.vAddressOne, v.vAddressTwo, v.vCityTown, v.vCounty,
 												v.vCountry, v.vPostCode, v.tier, v.active
 												FROM ds_invoices AS i

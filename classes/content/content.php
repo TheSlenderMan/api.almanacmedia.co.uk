@@ -24,6 +24,23 @@ class content{
                                     <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
                                     </div>';
                 break;
+			case "SIGNUPVENUE":
+                $this->content = '<div style="width:100%;text-align:center;">
+                                    <img src="http://img.almanacmedia.co.uk/dealchasrlogo.png" width="200" height="200" /><br /><br/>
+                                    <span style="color:#F9A603;font-size:18px;font-weight:bold;" >WELCOME TO DEALCHASR!</span><br/><br/>
+                                    Your account has successfully been created and you can log into http://my.dealchasr.co.uk straight away, 
+									However, in order for your venue to show up on our public facing app you need to validate your email address using the 
+									link below.
+                                    <br/><Br/>
+                                    Validate Your Email Address Here<br /><br />
+									<a href="http://my.dealchasr.co.uk/app/validate/?token=' . $params[1] . '&email=' . $params[0] . '&vid=' . $params[2] . '" >http://my.dealchasr.co.uk/app/validate/?token=' . $params[1] . '&email=' . $params[0] . '&vid=' . $params[2] . '</a>
+                                    <br/><br/>
+									The link above will expire in 12 hours. If your link has expired then you can log into the partner portal and resend a validation email.<br /><br />
+                                    If you have any queries about using DealChasr you can get us on theteam@dealchasr.co.uk<br/><br/><br/>
+									Thanks,<br />
+                                    <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
+                                    </div>';
+                break;
             case "VOUCHERREDEEMED":
                 $this->content = '<div style="width:100%;text-align:center;">
                                     <img src="http://img.almanacmedia.co.uk/dealchasrlogo.png" width="200" height="200" /><br /><br/>

@@ -1,18 +1,162 @@
 <?php
 include "classes/database/data.php";
+include "classes/email/email.php";
+include "classes/content/content.php";
 
 class venues{
 
     private $conn;
+	private $email;
+	private $content;
 
     function __construct(){
         $connection = new data();
         $this->conn = $connection->startConnection();
+		$this->content = new content();
     }
+	
+	public function createVenue($vName, $vEmail, $vWeb, $vCont, $vAOne, $vATwo, $vCity, $vCounty, $vCountry, $vPostCode, $tier, 
+		$owner){
+		if(empty($vName)){
+			Throw new Exception("Missing Venue Name");
+		}
+		if(empty($vEmail)){
+			Throw new Exception("Missing Venue Email");
+		}
+		if(!filter_var($vEmail, FILTER_VALIDATE_EMAIL)){
+            return array("data" => array("message" => "PLEASE ENTER A CORRECT EMAIL ADDRESS", "created" => 0));
+        }
+		if(empty($vWeb)){
+			Throw new Exception("Missing Venue Website");
+		}
+		if(empty($vCont)){
+			Throw new Exception("Missing Venue Contact Number");
+		}
+		if(empty($vAOne)){
+			Throw new Exception("Missing Venue Address One");
+		}
+		if(empty($vCity)){
+			Throw new Exception("Missing Venue City");
+		}
+		if(empty($vCounty)){
+			Throw new Exception("Missing Venue County");
+		}
+		if(empty($vCountry)){
+			Throw new Exception("Missing Venue Country");
+		}
+		if(empty($vPostCode)){
+			Throw new Exception("Missing Venue Post Code");
+		}
+		
+		$vEmail = strtolower($vEmail);
+		
+		if($this->checkVenueExists($vName, $vEmail, $vCont, $vWeb)){
+			return array("data" => array("message" => "Venue already exists.", "created" => 0));
+		}
+		
+		$tokenString = sha1($vEmail) . time() . $vName;
+		$token       = md5($tokenString);
+
+        try{
+            $insertVenue = $this->conn->prepare("INSERT INTO ds_venues (vName, vWebsite, vContact, vEmail, vAddressOne,
+												vAddressTwo, vCityTown, vCounty, vCountry, vPostCode, owner, tier) 
+												VALUES (:name, :web, :cont, :email, :a1, :a2, :city, :county, :country, :post,
+												:owner, :tier)");
+            $insertVenue->bindParam(':name', $vName);
+            $insertVenue->bindParam(':web', $vWeb);
+            $insertVenue->bindParam(':cont', $vCont);
+            $insertVenue->bindParam(':email', $vEmail);
+			$insertVenue->bindParam(':a1', $vAOne);
+			$insertVenue->bindParam(':a2', $vATwo);
+			$insertVenue->bindParam(':city', $vCity);
+			$insertVenue->bindParam(':county', $vCounty);
+			$insertVenue->bindParam(':country', $vCountry);
+			$insertVenue->bindParam(':post', $vPostCode);
+			$insertVenue->bindParam(':owner', $owner);
+			$insertVenue->bindParam(':tier', $tier);
+
+            if($insertVenue->execute()){
+				$vid = $this->conn->lastInsertId();
+				
+				$expires = strtotime("+1 day");
+				$val = $this->conn->prepare("INSERT INTO ds_email_validation (ekey, email, expires, vid) VALUES (:key, :email, :expires, :vid)");
+				$val->bindParam(":key", $token);
+				$val->bindParam(":email", $vEmail);
+				$val->bindParam(":expires", $expires);
+				$val->bindParam(":vid", $vid);
+				
+				if($val->execute()){
+					$this->email = new email($vEmail);
+					$this->email->setBody($this->content->getContent("SIGNUPVENUE", array($vEmail, $token, $vid)));
+					$this->email->setSubject("Welcome to DealChasr!");
+					$this->email->executeMail();
+					return array("data" => array("created" => 1, "venueID" => $vid));
+				} else {
+					Throw new Exception(json_encode($val->errorInfo()));
+				}
+            } else {
+                Throw new Exception(json_encode($insertUser->errorInfo()));
+            }
+        } catch (Exception $e) {
+            Throw new Exception($e->getMessage());
+        }
+	}
+	
+	public function resendValidation($email, $vid){
+		if(empty($email)){
+			Throw new Exception("Missing Email Address.");
+		}
+		if(empty($vid)){
+			Throw new Exception("Missing Venue ID.");
+		}
+		
+		$tokenString = sha1($email) . time() . $vid;
+		$token       = md5($tokenString);
+		
+		$expires = strtotime("+1 day");
+		$val = $this->conn->prepare("INSERT INTO ds_email_validation (ekey, email, expires, vid) VALUES (:key, :email, :expires, :vid)");
+		$val->bindParam(":key", $token);
+		$val->bindParam(":email", $email);
+		$val->bindParam(":expires", $expires);
+		$val->bindParam(":vid", $vid);
+		
+		if($val->execute()){
+			$this->email = new email($email);
+			$this->email->setBody($this->content->getContent("SIGNUPVENUE", array($email, $token, $vid)));
+			$this->email->setSubject("Welcome to DealChasr!");
+			$this->email->executeMail();
+			return array("sent" => 1);
+		} else {
+			Throw new Exception(json_encode($val->errorInfo()));
+		}
+	}
+	
+	private function checkVenueExists($vName, $vEmail, $vCont, $vWeb){
+		try{
+			$findVenue = $this->conn->prepare("SELECT * FROM ds_venues
+												WHERE vName = :vName
+												AND vContact = :vCont
+												AND vWebsite = :vWeb
+												AND vEmail = :vEmail");
+			$findVenue->bindParam(":vName", $vName);
+			$findVenue->bindParam(":vCont", $vCont);
+			$findVenue->bindParam(":vWeb", $vWeb);
+			$findVenue->bindParam(":vEmail", $vEmail);
+			$findVenue->execute();
+			$venues = $findVenue->fetchAll();
+			if(count($venues) > 0){
+				return true;
+			} else {
+				return false;
+			}
+		} catch (Exception $e) {
+			Throw new Exception($e->getMessage());
+		}
+	}
 
     public function getVenues(){
         try{
-            $getVenues = $this->conn->prepare("SELECT * FROM ds_venues WHERE active = 1");
+            $getVenues = $this->conn->prepare("SELECT * FROM ds_venues WHERE active = 1 AND validated = 1");
             $getVenues->execute();
 
             $venues = $getVenues->fetchAll();
@@ -23,7 +167,7 @@ class venues{
 				if(count($vouchCount) == 0 && count($dealCount) == 0 && $v['tier'] == 1){
 					unset($venues[$k]);
 					continue;
-				} else if($v['tier'] == 2){
+				} else if($v['tier'] == 2 || $v['tier'] == 3){
 					$venues[$k]['vouchers'] = $vouchCount;
 					$venues[$k]['deals'] = $dealCount;
 				}
