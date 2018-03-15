@@ -41,6 +41,14 @@ class content{
                                     <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
                                     </div>';
                 break;
+			case "VENUEINTRO":
+                $this->content = '<div style="width:100%;text-align:center;">
+                                    <img src="http://img.almanacmedia.co.uk/welcome-info.png" width="500" height="1400" /><br /><br/>
+                                    <br/><br/>
+									Thanks,<br />
+                                    <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
+                                    </div>';
+                break;
             case "VOUCHERREDEEMED":
                 $this->content = '<div style="width:100%;text-align:center;">
                                     <img src="http://img.almanacmedia.co.uk/dealchasrlogo.png" width="200" height="200" /><br /><br/>
@@ -151,6 +159,19 @@ class content{
 									You will receive a PayPal receipt shortly.
 									<br /><br />
 									<a href="http://my.dealchasr.co.uk/app/" style="color:#F9A603;font-size:14px;font-weight:bold;" >VIEW YOUR INVOICE HERE</a><br /><br />
+                                    Thanks!<br/><br/><br/>
+                                    <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
+                                    </div>';
+				break;
+			case "ACCOUNTUPGRADE":
+				$this->content = '<div style="width:100%;text-align:center;">
+                                    <img src="http://img.almanacmedia.co.uk/dealchasrlogo.png" width="200" height="200" /><br /><br/>
+                                    <span style="color:#F9A603;font-size:18px;font-weight:bold;" >YOUR ACCOUNT HAS BEEN UPGRADED</span><br/><br/>
+                                    <br/><Br/>
+                                    <span style="color:#F9A603;font-size:18px;font-weight:bold;" >YOU ARE NOW ON THE ' . $params[0] . ' TIER</span><br /><br />
+                                    <br/><br/>
+									If you feel this is an error please contact theteam@dealchasr.co.uk.
+									<br /><br /><br />
                                     Thanks!<br/><br/><br/>
                                     <span style="color:#F9A603;font-size:26px;font-weight:bold;" >THE TEAM @ DEALCHASR</span><br/><br/>
                                     </div>';

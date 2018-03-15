@@ -1,6 +1,4 @@
 <?php
-include "classes/email/email.php";
-include "classes/content/content.php";
 include "classes/venues/venues.php";
 
 class vouchers{
@@ -112,7 +110,7 @@ class vouchers{
                 $this->email->setBody($this->content->getContent("VOUCHERREDEEMED", array($uName)));
                 $this->email->executeMail();
 				
-				$this->email = new email($vEmail['vEmail']);
+				$this->email->setEmail($vEmail['vEmail']);
                 $this->email->setSubject("One of your " . $vEmail['voucherName'] . " " . $vEmail['dealName'] . " vouchers has been redeemed!");
                 $this->email->setBody($this->content->getContent("VOUCHERREDEEMEDVENUE", array($vEmail['vDescription'],
 				$vEmail['dealName'], $vEmail['voucherName'], $vEmail['fullName'])));

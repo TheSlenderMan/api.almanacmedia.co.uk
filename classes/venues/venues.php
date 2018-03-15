@@ -49,6 +49,11 @@ class venues{
 		}
 		
 		$vEmail = strtolower($vEmail);
+
+        $parsed = parse_url($vWeb);
+        if (empty($parsed['scheme'])) {
+            $vWeb = 'http://' . ltrim($vWeb, '/');
+        }
 		
 		if($this->checkVenueExists($vName, $vEmail, $vCont, $vWeb)){
 			return array("data" => array("message" => "Venue already exists.", "created" => 0));
@@ -95,7 +100,7 @@ class venues{
 					Throw new Exception(json_encode($val->errorInfo()));
 				}
             } else {
-                Throw new Exception(json_encode($insertUser->errorInfo()));
+                Throw new Exception(json_encode($insertVenue->errorInfo()));
             }
         } catch (Exception $e) {
             Throw new Exception($e->getMessage());
@@ -405,6 +410,12 @@ class venues{
         if(empty($vapostcode)){
             Throw new Exception("Post Code is Missing");
         }
+
+        $parsed = parse_url($vweb);
+        if (empty($parsed['scheme'])) {
+            $vweb = 'http://' . ltrim($vweb, '/');
+        }
+
         try{
             $update = $this->conn->prepare("UPDATE ds_venues SET vDescription = :vdesc, vWebsite = :vweb,
                                             vOpenHours = :vopen, vContact = :vcont, vEmail = :email, vAddressOne = :vaone,
@@ -576,6 +587,50 @@ class venues{
 			return array("changed" => 1, "message" => "Account Updated");
 		} catch (Exception $e) {
 			Throw new Exception($e->getMessage());
+		}
+	}
+	
+	public function upgradeAccount($vid, $old, $new, $email){
+		if(empty($vid)){
+			Throw new Exception("Missing Venue ID");
+		}
+		if(empty($old)){
+			Throw new Exception("Missing Old Tier");
+		}
+		if(empty($new)){
+			Throw new Exception("Missing New Tier");
+		}
+		if(empty($email)){
+			Throw new Exception("Missing Email");
+		}
+		
+		if($old != $new){
+			try{
+				$upgrade = $this->conn->prepare("UPDATE ds_venues SET tier = :tier WHERE id = :vid");
+				$upgrade->bindParam(":vid", $vid);
+				$upgrade->bindParam(":tier", $new);
+				if($upgrade->execute()){
+					if($new == 1){
+						$tierStr = "FREE";
+					} else if($new == 2) {
+						$tierStr = "PRO";
+					} else {
+						$tierStr = "PREMIUM";
+					}
+					$email = new email($email);
+					$email->setBody($this->content->getContent("ACCOUNTUPGRADE", array($tierStr)));
+					$email->setSubject("Account Upgrade - DealChasr");
+					$email->executeMail();
+					
+					return array("upgraded" => 1);
+				} else {
+					Throw new Exception("There was a problem upgrading your account.");
+				}
+			} catch (Exception $e) {
+				Throw new Exception($e->getMessage());
+			}
+		} else {
+			Throw new Exception("Tiers are the same");
 		}
 	}
 }

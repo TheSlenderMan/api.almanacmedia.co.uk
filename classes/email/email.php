@@ -17,6 +17,10 @@ class email {
         $this->headers .= "Return-Path: DealChasr <theteam@dealchasr.co.uk>\r\n";
     }
 
+	public function setEmail($e){
+		$this->to = $e;
+	}
+	
     public function setBody($body){
         $this->body = $body;
     }

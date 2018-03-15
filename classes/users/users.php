@@ -34,10 +34,10 @@ class users{
 
         $email = strtolower($email);
 
-        if($this->checkUserExists($email)){
+        if($this->checkUserExists($email, $type)){
             return array("data" => array("message" => "USER ALREADY REGISTERED", "created" => 0));
         }
-
+		
         $salt = $this->createSalt();
 
         $hash = $this->createHash($password, $salt);
@@ -51,10 +51,17 @@ class users{
 			$insertUser->bindParam(':type', $type);
 
             if($insertUser->execute()){
-                $this->email = new email($email);
-                $this->email->setBody($this->content->getContent("SIGNUP"));
-                $this->email->setSubject("Welcome to DealChasr!");
-                $this->email->executeMail();
+				if($type == 'user'){
+					$this->email = new email($email);
+					$this->email->setBody($this->content->getContent("SIGNUP"));
+					$this->email->setSubject("Welcome to DealChasr!");
+					$this->email->executeMail();
+				} else {
+					$this->email = new email($email);
+					$this->email->setBody($this->content->getContent("VENUEINTRO"));
+					$this->email->setSubject("Welcome to DealChasr!");
+					$this->email->executeMail();
+				}
                 return array("data" => array("created" => 1, "userID" => $this->conn->lastInsertId()));
             } else {
                 Throw new Exception(json_encode($insertUser->errorInfo()));
@@ -185,10 +192,11 @@ class users{
         }
     }
 
-    private function checkUserExists($email) {
+    private function checkUserExists($email, $type) {
         try{
-            $getUser = $this->conn->prepare("SELECT * FROM ds_users WHERE email = :email");
+            $getUser = $this->conn->prepare("SELECT * FROM ds_users WHERE email = :email AND userType = :type");
             $getUser->bindParam(":email", $email);
+			$getUser->bindParam(":type", $type);
             $getUser->execute();
 
             if(empty($getUser->fetchAll())){
