@@ -235,7 +235,8 @@ class users{
                                                         vt.id =  v.voucherTypeID
                                                         JOIN ds_venues AS ve ON ve.id = v.venueID
                                                         JOIN ds_deal_types AS d ON d.id = v.dealType
-                                                        WHERE u.userID = :uid");
+                                                        WHERE u.userID = :uid
+                                                        ORDER BY v.endDate ASC");
 
             $getVouchers->bindParam(":uid", $uid);
             $getVouchers->execute();

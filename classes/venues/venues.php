@@ -252,7 +252,8 @@ class venues{
                                                         WHERE ve.id = :vid
                                                         AND v.endDate > NOW()
                                                         AND v.active = 1
-                                                        AND v.voucherCount > 0");
+                                                        AND v.voucherCount > 0
+                                                        ORDER BY v.created DESC");
 
             $getVouchers->bindParam(":vid", $id);
             $getVouchers->execute();

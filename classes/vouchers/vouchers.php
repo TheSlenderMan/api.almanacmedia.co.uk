@@ -172,10 +172,19 @@ class vouchers{
                                                         WHERE v.venueID = :vid
                                                         AND v.endDate > NOW()
                                                         AND v.voucherCount > 0
-                                                        AND v.active = 1");
+                                                        AND v.active = 1
+                                                        ORDER BY v.created ASC");
             $vouchers->bindParam(":vid", $vid);
             $vouchers->execute();
             $venueVouchers = $vouchers->fetchAll();
+
+            foreach($venueVouchers AS $k => $v){
+                $r = $this->conn->prepare("SELECT id FROM ds_redemptions WHERE voucherID = :vid");
+                $r->bindParam(":vid", $v['id']);
+                $r->execute();
+                $rr = $r->fetchAll();
+                $venueVouchers[$k]['redeemed'] = count($rr);
+            }
 
             return array("data" => $venueVouchers);
 
