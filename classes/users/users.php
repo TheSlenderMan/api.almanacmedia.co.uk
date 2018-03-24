@@ -236,6 +236,8 @@ class users{
                                                         JOIN ds_venues AS ve ON ve.id = v.venueID
                                                         JOIN ds_deal_types AS d ON d.id = v.dealType
                                                         WHERE u.userID = :uid
+                                                        AND u.nulled = 0
+                                                        AND v.endDate > NOW()
                                                         ORDER BY v.endDate ASC");
 
             $getVouchers->bindParam(":uid", $uid);

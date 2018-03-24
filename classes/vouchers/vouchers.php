@@ -7,6 +7,7 @@ class vouchers{
     private $email;
     private $content;
 	private $venues;
+    private $FBAPIKEY = "AIzaSyBV-1NFuEaJ5eKCl--PcPvL1XVsCvnTtGk";
 
     function __construct(){
         $connection = new data();
@@ -17,9 +18,10 @@ class vouchers{
 
     public function createVoucher($uid, $vid, $did, $void, $vcount, $vdesc, $time){
         try{
-			$getVenue = $this->venues->getVenue($vid);
+			$getVenue = $this->venues->getVenue($vid, $uid);
 			$tier = $getVenue['data']['venues']['tier'];
 			$active = $getVenue['data']['venues']['active'];
+            $vName = $getVenue['data']['venues']['vName'];
 			
 			if($tier == 1){
 				$limit = 50;
@@ -55,12 +57,58 @@ class vouchers{
             $voucher->bindParam(":vtime", $newDate);
 
             if($voucher->execute()){
+                $this->sendAllToFavourites($vid, $vName);
                 return array("data" => array("created" => 1, "voucher" => $this->conn->lastInsertId()));
             } else {
                 Throw new Exception(json_encode($voucher->errorInfo()));
             }
         } catch (Exception $e) {
             Throw new Exception($e->getMessage());
+        }
+    }
+
+    private function sendAllToFavourites($vid, $vName){
+        $g = $this->conn->prepare("SELECT * FROM ds_favourites WHERE venueID = :vid");
+        $g->bindParam(":vid", $vid);
+        $g->execute();
+        $ds = $g->fetchAll();
+
+        foreach($ds As $k => $v){
+            $i = $this->conn->prepare("SELECT * FROM ds_notification_settings WHERE userID = :uid");
+            $i->bindParam(":uid", $v['userID']);
+            $i->execute();
+            $u = $i->fetch(PDO::FETCH_ASSOC);
+            if($u['favourite'] == 1){
+                $msg = array
+                (
+                    'body'  => "New Voucher Available!",
+                    'title'     => $vName,
+                    'vibrate'   => 1,
+                    'sound'     => 1,
+                );
+
+                $fields = array
+                (
+                    'to'  => $u['deviceID'],
+                    'data'          => $msg
+                );
+
+                $headers = array
+                (
+                    'Authorization: key=' . $this->FBAPIKEY,
+                    'Content-Type: application/json'
+                );
+
+                $ch = curl_init();
+                curl_setopt( $ch,CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send' );
+                curl_setopt( $ch,CURLOPT_POST, true );
+                curl_setopt( $ch,CURLOPT_HTTPHEADER, $headers );
+                curl_setopt( $ch,CURLOPT_RETURNTRANSFER, true );
+                curl_setopt( $ch,CURLOPT_SSL_VERIFYPEER, false );
+                curl_setopt( $ch,CURLOPT_POSTFIELDS, json_encode( $fields ) );
+                $result = curl_exec($ch );
+                curl_close( $ch );
+            }
         }
     }
 
@@ -301,5 +349,21 @@ class vouchers{
         }
     }
 
-
+    public function nullifyVoucher($uid, $vid){
+        if(empty($uid)){
+            Throw new Exception("Missing user ID");
+        }
+        if(empty($vid)) {
+            Throw new Exception("Missing voucher ID");
+        }
+        try{
+            $n = $this->conn->prepare("UPDATE ds_redemptions SET nulled = 1 WHERE userID = :uid AND voucherID = :vid");
+            $n->bindParam(":uid", $uid);
+            $n->bindParam(":vid", $vid);
+            $n->execute();
+            return array("nulled" => true);
+        } catch (Exception $e) {
+            Throw new Exception($e->getMessage());
+        }
+    }
 }

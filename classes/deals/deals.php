@@ -26,6 +26,22 @@ class deals{
             $markAs->bindParam(':dealID', $voucherID);
 
             if($markAs->execute()){
+                $v = $this->conn->prepare("SELECT venueID FROM ds_deals WHERE id = :did");
+                $v->bindParam(":did", $voucherID);
+                $v->execute();
+                $ve = $v->fetch(PDO::FETCH_ASSOC);
+
+                $g = $this->conn->prepare("SELECT * FROM ds_favourites WHERE userID = :uid");
+                $g->bindParam(":uid", $userID);
+                $g->execute();
+                $u = $g->fetchAll();
+
+                if(count($u) < 1){
+                    $i = $this->conn->prepare("INSERT INTO ds_favourites (userID, venueID) VALUES (:uid, :vid)");
+                    $i->bindParam(":uid", $userID);
+                    $i->bindParam(":vid", $ve['venueID']);
+                    $i->execute();
+                }
                 return array("data" => array("created" => 1, "interest" => $this->conn->lastInsertId()));
             } else {
                 Throw new Exception(json_encode($markAs->errorInfo()));
@@ -45,6 +61,12 @@ class deals{
 			if($tier == 1){
 				return array("data" => array("created" => 0, "message" => "SORRY, DEALS ARE UNAVAILABLE ON THE FREE ACCOUNT.<br /><br />"));
 			}
+
+            if($tier == 2){
+                if(count($getVenue['data']['venues']['deals']) == 1){
+                    return array("data" => array("created" => 0, "message" => "SORRY, ONLY ONE DEAL IS AVAILABLE ON THE PRO ACCOUNT.<br /><br />"));
+                }
+            }
 			
 			if($active == 0){
 				return array("data" => array("created" => 0, "message" => "SORRY, YOUR ACCOUNT IS NOT ACTIVE AT THE MOMENT.<br /><br />
