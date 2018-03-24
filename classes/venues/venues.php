@@ -167,12 +167,12 @@ class venues{
             $venues = $getVenues->fetchAll();
 
             foreach($venues as $k => $v){
-				$vouchCount = $this->getVouchers($v['id']);
-				$dealCount = $this->getDeals($v['id']);
-				if(count($vouchCount) == 0 && count($dealCount) == 0 && $v['tier'] == 1){
+				$vouchCount = $this->getVouchers($v['id'], false);
+				$dealCount = $this->getDeals($v['id'], false);
+				if(count($vouchCount) == 0 && count($dealCount) == 0 && ($v['tier'] == 1 || $v['tier'] == 2)){
 					unset($venues[$k]);
 					continue;
-				} else if($v['tier'] == 2 || $v['tier'] == 3){
+				} else {
 					$venues[$k]['vouchers'] = $vouchCount;
 					$venues[$k]['deals'] = $dealCount;
 				}

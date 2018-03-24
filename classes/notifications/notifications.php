@@ -37,8 +37,8 @@ class notifications{
 
 		$fields = array
 		(
-			'to'  => '/topics/' . $this->topic,
-			'notification'          => $msg
+			'to'  => $this->topic,
+			'data'          => $msg
 		);
 
 		$headers = array
@@ -75,6 +75,66 @@ class notifications{
 			Throw new Exception($e->getMessage());
 		}
 		return $res;
+	}
+	
+	public function registerDevice($uid, $did){
+		try{
+			$u = $this->conn->prepare("SELECT d.userID, d.global, d.favourite FROM ds_notification_settings AS d WHERE userID = :uid");
+			$u->bindParam(":uid", $uid);
+			$u->execute();
+			$ue = $u->fetchAll();
+			
+			if(count($ue) < 1){
+				$n = $this->conn->prepare("INSERT INTO ds_notification_settings (userID, deviceID, global, favourite) VALUES (:u, :d, 1, 1)");
+				$n->bindParam(":u", $uid);
+				$n->bindParam(":d", $did);
+				$n->execute();
+				return array("FCM" => true, "global" => 1, "favourite" => 1);
+			} else {
+				$n = $this->conn->prepare("UPDATE ds_notification_settings SET deviceID = :d WHERE userID = :u");
+				$n->bindParam(":u", $uid);
+				$n->bindParam(":d", $did);
+				$n->execute();
+				return array("FCM" => true, "global" => $ue[0]['global'], "favourite" => $ue[0]['favourite']);
+			}
+		} catch (Exception $e) {
+			Throw new Exception($e->getMessage());
+		}
+	}
+
+	public function sendToAllGlobal($t, $m){
+		try{
+			$g = $this->conn->prepare("SELECT * FROM ds_notification_settings WHERE global = 1");
+			$g->execute();
+			$gs = $g->fetchAll();
+			foreach($gs AS $k => $v){
+				$this->setTitle($t);
+				$this->setMessage($m);
+				$this->setTopic($v['deviceID']);
+				return $this->sendNotification();
+			}
+		} catch (Exception $e){
+			Throw new Exception($e->getMessage());
+		}
+	}
+
+	public function updateSettings($uid, $type, $tog){
+		try{
+			if($type == 'global'){
+				$n = $this->conn->prepare("UPDATE ds_notification_settings AS d SET d.global = :g WHERE d.userID = :uu");
+				$n->bindParam(":g", $tog);
+				$n->bindParam(":uu", $uid);
+				$n->execute();
+			} else {
+				$n = $this->conn->prepare("UPDATE ds_notification_settings AS d SET d.favourite = :g WHERE d.userID = :uu");
+				$n->bindParam(":g", $tog);
+				$n->bindParam(":uu", $uid);
+				$n->execute();
+			}
+			return array("FCM" => true);
+		} catch (Exception $e) {
+			Throw new Exception($e->getMessage());
+		}
 	}
 }
 ?>
