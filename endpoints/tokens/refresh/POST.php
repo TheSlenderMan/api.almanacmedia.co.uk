@@ -2,8 +2,8 @@
 include "classes/tokens/tokens.php";
 
 $t = new tokens();
-if(isset($_GET['client'])){
-	echo json_encode($t->getNewToken($_GET['client']));
+if(isset($_POST['client']) && isset($_POST['refreshToken'])){
+	echo json_encode($t->refreshToken($_POST['refreshToken'], $_POST['client']));
 	exit;
 } else {
 	echo json_encode(array("message" => "Missing Required Data"));

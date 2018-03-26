@@ -83,7 +83,28 @@ class users{
                 $checkedHash = $this->createHash($pass, $salt);
 
                 if($checkedHash == $hash){
-                    return array("loggedIn" => 1, "userID" => $user['data']['user']['id']);
+					$g = $this->conn->prepare("SELECT * FROM ds_login_token WHERE userID = :u");
+					$g->bindParam(":u", $user['data']['user']['id']);
+					$g->execute();
+					$us = $g->fetch(PDO::FETCH_ASSOC);
+					
+					$expires = date("Y-m-d H:i:s", strtotime("+7 days"));
+					
+					if(empty($us)){
+						$token = md5(sha1($user['data']['user']['id']) . time() . $email);
+						$in = $this->conn->prepare("INSERT INTO ds_login_token (token, userID, expires) VALUES (:t, :u, :e)");
+						$in->bindParam(":t", $token);
+						$in->bindParam(":u", $user['data']['user']['id']);
+						$in->bindParam(":e", $expires);
+						$in->execute();
+					} else {
+						$token = $us['token'];
+						$up = $this->conn->prepare("UPDATE ds_login_token SET expires = :e WHERE userID = :u");
+						$up->bindParam(":e", $expires);
+						$up->bindParam(":u", $user['data']['user']['id']);
+						$up->execute();
+					}
+                    return array("loggedIn" => 1, "userID" => $user['data']['user']['id'], "token" => $token);
                 } else {
                     return array("loggedIn" => 0, "message" => "INCORRECT PASSWORD");
                 }
