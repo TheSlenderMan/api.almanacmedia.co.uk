@@ -112,12 +112,18 @@ class vouchers{
         }
     }
 
-    public function redeemVoucher($userID, $voucherID){
+    public function redeemVoucher($userID, $voucherID, $vlat, $vlong){
         if(empty($userID)){
             Throw new Exception("User ID not supplied.");
         }
         if(empty($voucherID)){
             Throw new Exception("Voucher ID not supplied.");
+        }
+        if(empty($vlat)){
+            Throw new Exception("Venue Latitude not supplied.");
+        }
+        if(empty($vlong)){
+            Throw new Exception("Venue Longitude not supplied.");
         }
 
         try{
@@ -127,7 +133,7 @@ class vouchers{
             $getUser->execute();
             $userDetails = $getUser->fetch();
 			
-			$getVEmail = $this->conn->prepare("SELECT v.vEmail, vt.voucherName, dt.dealName, v.vDescription, u.fullName FROM ds_vouchers AS vo
+			$getVEmail = $this->conn->prepare("SELECT v.vEmail, v.redemptionEmail, vt.voucherName, dt.dealName, v.vDescription, u.fullName FROM ds_vouchers AS vo
 											JOIN ds_venues AS v
 											ON v.id = vo.venueID
 											JOIN ds_voucher_type AS vt
@@ -144,9 +150,11 @@ class vouchers{
             $uName = $userDetails['fullName'];
             $uEmail = $userDetails['email'];
 
-            $markAs = $this->conn->prepare("INSERT INTO ds_redemptions (userID, voucherID) VALUES (:userID, :voucherID)");
+            $markAs = $this->conn->prepare("INSERT INTO ds_redemptions (userID, voucherID, vlat, vlong) VALUES (:userID, :voucherID, :vlat, :vlong)");
             $markAs->bindParam(':userID', $userID);
             $markAs->bindParam(':voucherID', $voucherID);
+            $markAs->bindParam(':vlat', $vlat);
+            $markAs->bindParam(':vlong', $vlong);
 
             if($markAs->execute()){
                 $redeemOne = $this->conn->prepare("UPDATE ds_vouchers SET voucherCount = voucherCount - 1 WHERE id = :id");
@@ -158,11 +166,13 @@ class vouchers{
                 $this->email->setBody($this->content->getContent("VOUCHERREDEEMED", array($uName)));
                 $this->email->executeMail();
 				
-				$this->email->setEmail($vEmail['vEmail']);
-                $this->email->setSubject("One of your " . $vEmail['voucherName'] . " " . $vEmail['dealName'] . " vouchers has been redeemed!");
-                $this->email->setBody($this->content->getContent("VOUCHERREDEEMEDVENUE", array($vEmail['vDescription'],
-				$vEmail['dealName'], $vEmail['voucherName'], $vEmail['fullName'])));
-                $this->email->executeMail();
+				if($vEmail['redemptionEmail'] == 1){
+					$this->email->setEmail($vEmail['vEmail']);
+					$this->email->setSubject("One of your " . $vEmail['voucherName'] . " " . $vEmail['dealName'] . " vouchers has been redeemed!");
+					$this->email->setBody($this->content->getContent("VOUCHERREDEEMEDVENUE", array($vEmail['vDescription'],
+					$vEmail['dealName'], $vEmail['voucherName'], $vEmail['fullName'])));
+					$this->email->executeMail();
+				}
 
                 return array("data" => array("created" => 1, "redeemed" => $this->conn->lastInsertId()));
             } else {
@@ -184,16 +194,22 @@ class vouchers{
         try{
             $getVoucher = $this->conn->prepare("SELECT v.id, v.active, v.venueID, ve.vName, ve.vWebsite, v.voucherCount,
                                                         v.endDate, v.voucherDescription, d.dealName,
-                                                        vt.voucherName FROM ds_vouchers AS v
+                                                        vt.voucherName, r.redeemed, r.vlat, r.vlong, r.used, r.usedDate FROM ds_vouchers AS v
                                                         JOIN ds_voucher_type AS vt ON
                                                         vt.id =  v.voucherTypeID
                                                         JOIN ds_venues AS ve ON ve.id = v.venueID
                                                         JOIN ds_deal_types AS d ON d.id = v.dealType
+                                                        JOIN ds_redemptions AS r ON r.userID = :uid AND r.voucherID = v.id
                                                         WHERE v.id = :vid");
             $getVoucher->bindParam(":vid", $vid);
+            $getVoucher->bindParam(":uid", $uid);
             $getVoucher->execute();
 
-            $voucher = $getVoucher->fetch();
+            $voucher = $getVoucher->fetch(PDO::FETCH_ASSOC);
+
+            $r = strtotime($voucher['usedDate']) + 900;
+            $voucher['difference'] = ($r - time());
+
 
             if(empty($voucher)){
                 return array("data" => array("found" => 0, "venues" => "No voucher found"));
@@ -362,6 +378,28 @@ class vouchers{
             $n->bindParam(":vid", $vid);
             $n->execute();
             return array("nulled" => true);
+        } catch (Exception $e) {
+            Throw new Exception($e->getMessage());
+        }
+    }
+
+    public function useVoucher($uid, $vid, $time){
+        if(empty($uid)){
+            Throw new Exception("Missing user ID");
+        }
+        if(empty($vid)) {
+            Throw new Exception("Missing voucher ID");
+        }
+        if(empty($time)) {
+            Throw new Exception("Missing Time");
+        }
+        try{
+            $n = $this->conn->prepare("UPDATE ds_redemptions SET used = 1, usedDate = NOW() WHERE userID = :uid AND voucherID = :vid");
+            $n->bindParam(":uid", $uid);
+            $n->bindParam(":vid", $vid);
+            //$n->bindValue(":d", urldecode($time));
+            $n->execute();
+            return array("used" => true);
         } catch (Exception $e) {
             Throw new Exception($e->getMessage());
         }

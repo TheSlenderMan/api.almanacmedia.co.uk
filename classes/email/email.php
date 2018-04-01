@@ -5,7 +5,7 @@ class email {
     private $to;
     private $body;
     private $subject;
-    private $headers = "From: DealChasr <theteam@dealchasr.co.uk>" . "\r\n";
+    private $headers = "From: DealChasr <noreply@dealchasr.co.uk>" . "\r\n";
 
     function __construct($to){
         $this->to = $to;
@@ -13,8 +13,8 @@ class email {
         $this->headers .= "Content-type: text/html; charset=iso-8859-1" . "\r\n";
         $this->headers .= "X-Priority: 3\r\n";
         $this->headers .= "X-Mailer: PHP". phpversion() ."\r\n";
-        $this->headers .= "Reply-To: DealChasr <theteam@dealchasr.co.uk>\r\n";
-        $this->headers .= "Return-Path: DealChasr <theteam@dealchasr.co.uk>\r\n";
+        $this->headers .= "Reply-To: DealChasr <noreply@dealchasr.co.uk>\r\n";
+        $this->headers .= "Return-Path: DealChasr <noreply@dealchasr.co.uk>\r\n";
     }
 
 	public function setEmail($e){

@@ -250,7 +250,7 @@ class venues{
                                                         JOIN ds_venues AS ve ON ve.id = v.venueID
                                                         JOIN ds_deal_types AS d ON d.id = v.dealType
                                                         WHERE ve.id = :vid
-                                                        AND v.endDate > NOW()
+                                                        AND v.endDate > NOW() - INTERVAL 1 HOUR
                                                         AND v.active = 1
                                                         AND v.voucherCount > 0
                                                         ORDER BY v.created DESC");
@@ -383,7 +383,7 @@ class venues{
         }
     }
 
-    public function updateDetails($vdesc, $vweb, $vopen, $vcont, $vaone, $vatwo, $vacity, $vacounty, $vacountry, $vapostcode, $vemail){
+    public function updateDetails($vdesc, $vweb, $vopen, $vcont, $vaone, $vatwo, $vacity, $vacounty, $vacountry, $vapostcode, $vemail, $vid, $remail){
         if(empty($vdesc)){
             Throw new Exception("Description is Missing");
         }
@@ -411,6 +411,9 @@ class venues{
         if(empty($vapostcode)){
             Throw new Exception("Post Code is Missing");
         }
+		if(empty($vid)){
+            Throw new Exception("Venue ID is missing");
+        }
 
         $parsed = parse_url($vweb);
         if (empty($parsed['scheme'])) {
@@ -421,7 +424,7 @@ class venues{
             $update = $this->conn->prepare("UPDATE ds_venues SET vDescription = :vdesc, vWebsite = :vweb,
                                             vOpenHours = :vopen, vContact = :vcont, vEmail = :email, vAddressOne = :vaone,
                                             vAddressTwo = :vatwo, vCityTown = :vacity, vCounty = :vacounty,
-                                            vCountry = :vacountry, vPostCode = :vapostcode");
+                                            vCountry = :vacountry, vPostCode = :vapostcode, redemptionEmail = :remail WHERE id = :vid");
             $update->bindParam(":vdesc", $vdesc);
             $update->bindParam(":vweb", $vweb);
             $update->bindParam(":vopen", $vopen);
@@ -433,6 +436,8 @@ class venues{
             $update->bindParam(":vacounty", $vacounty);
             $update->bindParam(":vacountry", $vacountry);
             $update->bindParam(":vapostcode", $vapostcode);
+			$update->bindParam(":remail", $remail);
+			$update->bindParam(":vid", $vid);
             if($update->execute()){
                 return array("updated" => 1);
             } else {
