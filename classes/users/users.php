@@ -248,7 +248,7 @@ class users{
     public function getVouchers($uid){
         try{
             $getVouchers = $this->conn->prepare("SELECT u.userID, u.voucherID, v.id, ve.vName, v.active, v.venueID, v.voucherCount,
-                                                        v.endDate, u.redeemed, v.voucherDescription, d.dealName,
+                                                        v.endDate, u.redeemed, v.voucherDescription, d.dealName, u.usedDate,
                                                         vt.voucherName FROM ds_redemptions AS u
                                                         JOIN ds_vouchers AS v ON
                                                         u.voucherID = v.id
@@ -259,7 +259,7 @@ class users{
                                                         WHERE u.userID = :uid
                                                         AND u.nulled = 0
                                                         AND v.endDate > NOW()
-                                                        AND u.redeemed > (NOW() - INTERVAL 15 MINUTE)
+                                                        AND (NOW() BETWEEN u.usedDate AND (u.usedDate + INTERVAL 15 MINUTE))
                                                         ORDER BY v.endDate ASC");
 
             $getVouchers->bindParam(":uid", $uid);
